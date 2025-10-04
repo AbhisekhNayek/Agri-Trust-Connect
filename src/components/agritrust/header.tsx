@@ -9,7 +9,22 @@ import { Button } from "@/components/ui/button"
  * Navigation link configuration
  * Centralized configuration for easier maintenance and consistency
  */
-const NAV_LINKS = [
+type NavLinkBase = {
+  label: string;
+  primary: boolean;
+};
+
+type NavLinkSimple = NavLinkBase & {
+  href: string;
+};
+
+type NavLinkDropdown = NavLinkBase & {
+  dropdown: { href: string; label: string }[];
+};
+
+type NavLink = NavLinkSimple | NavLinkDropdown;
+
+const NAV_LINKS: NavLink[] = [
   { href: "/", label: "Home", primary: true },
   { href: "#features", label: "Features", primary: false },
   { href: "#how-it-works", label: "How It Works", primary: false },
@@ -37,7 +52,7 @@ const NAV_LINKS = [
   },
   { href: "#about", label: "About Us", primary: false },
   { href: "#contact", label: "Contact", primary: false },
-] as const
+];
 
 /**
  * Scroll threshold for header style change
@@ -197,8 +212,9 @@ export function Header() {
           {/* Desktop Navigation - Hidden on mobile screens, progressive reveal on larger screens */}
           <nav className="hidden items-center gap-4 md:flex lg:gap-6" aria-label="Main navigation">
             {/* Navigation links */}
-            {NAV_LINKS.map((link) => (
-              link.dropdown ? (
+            {NAV_LINKS.map((link) => {
+              const isDropdown = (l: NavLink): l is NavLinkDropdown => 'dropdown' in l;
+              return isDropdown(link) ? (
                 // Dropdown navigation item
                 <div key={link.label} className="relative">
                   <button
@@ -238,8 +254,8 @@ export function Header() {
                 >
                   {link.label}
                 </Link>
-              )
-            ))}
+              );
+            })}
 
             {/* Login button with ghost style - Hidden on md, shown on lg+ */}
             <Link href="/login" className="hidden lg:block">
@@ -287,8 +303,9 @@ export function Header() {
             aria-label="Mobile navigation"
           >
             {/* Mobile navigation links */}
-            {NAV_LINKS.map((link) => (
-              link.dropdown ? (
+            {NAV_LINKS.map((link) => {
+              const isDropdown = (l: NavLink): l is NavLinkDropdown => 'dropdown' in l;
+              return isDropdown(link) ? (
                 // Mobile dropdown navigation item
                 <div key={link.label}>
                   <button
@@ -329,8 +346,8 @@ export function Header() {
                 >
                   {link.label}
                 </Link>
-              )
-            ))}
+              );
+            })}
 
             {/* Mobile CTA buttons container */}
             <div className="flex flex-col gap-2 border-t border-border/40 pt-4">
