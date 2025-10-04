@@ -20,8 +20,8 @@ type NavLink =
 
 const NAV_LINKS: readonly NavLink[] = [
   { href: "/", label: "Home", primary: true },
-  { href: "/#features", label: "Features", primary: false },
-  { href: "/#how-it-works", label: "How It Works", primary: false },
+  { href: "/features", label: "Features", primary: false },
+  { href: "/how-it-works", label: "How It Works", primary: false },
   { href: "/pricing", label: "Pricing", primary: false },
   { 
     label: "Solutions", 
