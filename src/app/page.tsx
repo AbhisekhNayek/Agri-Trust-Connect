@@ -1,4 +1,4 @@
-import { Header } from "@/components/agritrust/header"
+import { Header } from "@/components/layout/header"
 
 export default function HomePage() {
   return (
