@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse } from "next/server"
-import { JWTPayload } from "@/lib/auth/jwt"
-import { UserRole } from "@/models/User"
+import { NextRequest, NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
+import { UserRole } from "@/models/User";
 
-/**
- * Role-based Access Control Middleware
- * 
- * Checks if authenticated user has required role(s) to access a route.
- * 
- * File: src/middleware/role.ts
- */
+// Define JWTPayload interface
+export interface JWTPayload {
+  userId: string;
+  role: UserRole;
+  refreshTokenVersion: number;
+}
 
 /**
  * Check if user has required role
@@ -17,7 +16,39 @@ import { UserRole } from "@/models/User"
  * @returns True if user has permission
  */
 export function hasRole(userRole: string, allowedRoles: UserRole[]): boolean {
-  return allowedRoles.includes(userRole as UserRole)
+  return allowedRoles.includes(userRole as UserRole);
+}
+
+/**
+ * Middleware to verify JWT and extract user
+ */
+export function withAuth(
+  handler: (request: NextRequest, user: JWTPayload) => Promise<NextResponse>
+) {
+  return async (request: NextRequest): Promise<NextResponse> => {
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { success: false, error: "No token provided" },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+
+    try {
+      const payload = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
+      return handler(request, payload);
+    } catch (error: any) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.name === "TokenExpiredError" ? "Token expired" : "Invalid token",
+        },
+        { status: 401 }
+      );
+    }
+  };
 }
 
 /**
@@ -28,8 +59,7 @@ export function withRole(
   allowedRoles: UserRole[],
   handler: (request: NextRequest, user: JWTPayload) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, user: JWTPayload): Promise<NextResponse> => {
-    // Check if user has required role
+  return withAuth(async (request: NextRequest, user: JWTPayload) => {
     if (!hasRole(user.role, allowedRoles)) {
       return NextResponse.json(
         {
@@ -38,56 +68,63 @@ export function withRole(
           requiredRoles: allowedRoles,
         },
         { status: 403 }
-      )
+      );
     }
-
-    // User has permission, proceed to handler
-    return handler(request, user)
-  }
+    return handler(request, user);
+  });
 }
 
 /**
- * Check if user is admin
- */
-export function isAdmin(userRole: string): boolean {
-  return userRole === UserRole.ADMIN
-}
-
-/**
- * Admin-only middleware wrapper
+ * Admin-only middleware
  */
 export function withAdmin(
   handler: (request: NextRequest, user: JWTPayload) => Promise<NextResponse>
 ) {
-  return withRole([UserRole.ADMIN], handler)
+  return withRole([UserRole.ADMIN], handler);
 }
 
 /**
- * Farmer-only middleware wrapper
+ * Farmer-only middleware
  */
 export function withFarmer(
   handler: (request: NextRequest, user: JWTPayload) => Promise<NextResponse>
 ) {
-  return withRole([UserRole.FARMER], handler)
+  return withRole([UserRole.FARMER], handler);
 }
 
 /**
- * Buyer-only middleware wrapper
+ * Buyer-only middleware
  */
 export function withBuyer(
   handler: (request: NextRequest, user: JWTPayload) => Promise<NextResponse>
 ) {
-  return withRole([UserRole.BUYER], handler)
+  return withRole([UserRole.BUYER], handler);
 }
 
 /**
- * Multiple roles middleware wrapper
+ * Supplier-only middleware
+ */
+export function withSupplier(
+  handler: (request: NextRequest, user: JWTPayload) => Promise<NextResponse>
+) {
+  return withRole([UserRole.SUPPLIER], handler);
+}
+
+/**
+ * Logistics-only middleware
+ */
+export function withLogistics(
+  handler: (request: NextRequest, user: JWTPayload) => Promise<NextResponse>
+) {
+  return withRole([UserRole.LOGISTICS], handler);
+}
+
+/**
+ * Multiple roles middleware
  * Example: withRoles([UserRole.FARMER, UserRole.SUPPLIER])
  */
 export function withRoles(allowedRoles: UserRole[]) {
-  return (
-    handler: (request: NextRequest, user: JWTPayload) => Promise<NextResponse>
-  ) => {
-    return withRole(allowedRoles, handler)
-  }
+  return (handler: (request: NextRequest, user: JWTPayload) => Promise<NextResponse>) => {
+    return withRole(allowedRoles, handler);
+  };
 }

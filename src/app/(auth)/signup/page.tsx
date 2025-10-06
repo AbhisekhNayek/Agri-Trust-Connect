@@ -12,9 +12,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sprout, Eye, EyeOff } from "lucide-react";
 
-/**
- * User role options for registration
- */
 const USER_ROLES = [
   { id: "farmer", label: "Farmer" },
   { id: "buyer", label: "Buyer" },
@@ -22,23 +19,9 @@ const USER_ROLES = [
   { id: "logistics", label: "Logistics Provider" },
 ] as const;
 
-/**
- * SignupPage Component
- * 
- * Registration page for new users to create an AgriTrust account.
- * Features:
- * - Multi-field registration form
- * - User role selection
- * - Password visibility toggle
- * - Terms and conditions acceptance
- * - Form validation and error handling
- * - Loading states during submission
- */
 export default function SignupPage() {
-  // Next.js router for navigation after successful signup
   const router = useRouter();
 
-  // Form state management
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -52,36 +35,27 @@ export default function SignupPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(""); // Added for success message
 
-  /**
-   * Handle input field changes
-   * Updates form data state for controlled inputs
-   */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-    // Clear error when user starts typing
     if (error) setError("");
+    if (success) setSuccess("");
   };
 
-  /**
-   * Handle role selection
-   */
   const handleRoleChange = (roleId: string) => {
     setFormData((prev) => ({
       ...prev,
       role: roleId,
     }));
     if (error) setError("");
+    if (success) setSuccess("");
   };
 
-  /**
-   * Validate form data before submission
-   * Returns error message if validation fails, empty string if valid
-   */
   const validateForm = (): string => {
     if (!formData.fullName.trim()) {
       return "Please enter your full name";
@@ -107,16 +81,10 @@ export default function SignupPage() {
     return "";
   };
 
-  /**
-   * Handle form submission and user registration
-   * Currently simulates registration with localStorage
-   * 
-   * @param e - Form event to prevent default submission
-   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate form data
+    // Client-side validation
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);
@@ -125,27 +93,35 @@ export default function SignupPage() {
 
     setIsLoading(true);
     setError("");
+    setSuccess("");
 
     try {
-      // TODO: Replace with actual API registration call
-      // Simulate network delay for registration
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+          phone: formData.phone || undefined, // Send undefined if empty to match backend
+          role: formData.role,
+        }),
+      });
 
-      // Store user data
-      // NOTE: In production, use secure authentication system
-      const userData = {
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        role: formData.role,
-        registeredAt: new Date().toISOString(),
-      };
+      const data = await response.json();
 
-      localStorage.setItem("auth_token", `mock_token_${Date.now()}`);
-      localStorage.setItem("user_data", JSON.stringify(userData));
+      if (!response.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
 
-      // Redirect to dashboard based on role
-      router.push("/dashboard");
+      // On success, show message and redirect
+      setSuccess("Registration successful! Please check your email to verify your account.");
+      setTimeout(() => {
+        router.push("/dashboard"); // Or redirect to a verification page
+      }, 2000); // Delay to allow user to see success message
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed. Please try again.");
     } finally {
@@ -179,33 +155,33 @@ export default function SignupPage() {
         variants={cardVariants}
       >
         <Card className="border-emerald-800/50 bg-emerald-900/50 backdrop-blur-md shadow-lg">
-          {/* Header section with logo and title */}
           <CardHeader className="space-y-1">
-            {/* AgriTrust Logo */}
             <div className="mb-4 flex justify-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-green-600 to-emerald-400 shadow-lg shadow-green-600/20">
                 <Sprout className="h-7 w-7 text-white" />
               </div>
             </div>
-
-            {/* Page title and description */}
             <CardTitle className="text-center text-2xl sm:text-3xl text-white">Create Your Account</CardTitle>
             <CardDescription className="text-center text-emerald-200">
               Join AgriTrust Connect and start building trust in agriculture
             </CardDescription>
           </CardHeader>
 
-          {/* Registration form */}
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
-              {/* Display error message if validation fails */}
+              {/* Display success message */}
+              {success && (
+                <div className="rounded-md bg-green-500/10 border border-green-500/20 p-3 text-sm text-green-400">
+                  {success}
+                </div>
+              )}
+              {/* Display error message */}
               {error && (
                 <div className="rounded-md bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">
                   {error}
                 </div>
               )}
 
-              {/* Full Name input */}
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="text-emerald-200">
                   Full Name <span className="text-red-500">*</span>
@@ -224,9 +200,7 @@ export default function SignupPage() {
                 />
               </div>
 
-              {/* Email and Phone - Two column layout on larger screens */}
               <div className="grid gap-4 sm:grid-cols-2">
-                {/* Email input */}
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-emerald-200">
                     Email <span className="text-red-500">*</span>
@@ -245,7 +219,6 @@ export default function SignupPage() {
                   />
                 </div>
 
-                {/* Phone input (optional) */}
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-emerald-200">Phone (Optional)</Label>
                   <Input
@@ -262,9 +235,7 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              {/* Password fields - Two column layout on larger screens */}
               <div className="grid gap-4 sm:grid-cols-2">
-                {/* Password input with visibility toggle */}
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-emerald-200">
                     Password <span className="text-red-500">*</span>
@@ -290,19 +261,12 @@ export default function SignupPage() {
                       tabIndex={-1}
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <p className="text-xs text-emerald-400">
-                    Must be at least 8 characters
-                  </p>
+                  <p className="text-xs text-emerald-400">Must be at least 8 characters</p>
                 </div>
 
-                {/* Confirm Password input with visibility toggle */}
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword" className="text-emerald-200">
                     Confirm Password <span className="text-red-500">*</span>
@@ -328,17 +292,12 @@ export default function SignupPage() {
                       tabIndex={-1}
                       aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
                     >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Role selection */}
               <div className="space-y-2">
                 <Label className="text-emerald-200">
                   I am a <span className="text-red-500">*</span>
@@ -364,7 +323,6 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              {/* Terms and conditions checkbox */}
               <div className="flex items-start space-x-2">
                 <Checkbox
                   id="terms"
@@ -389,9 +347,7 @@ export default function SignupPage() {
               </div>
             </CardContent>
 
-            {/* Form actions */}
             <CardFooter className="flex flex-col gap-4 mt-2">
-              {/* Submit button with loading state */}
               <motion.div variants={buttonGlowVariants} whileHover="hover">
                 <Button
                   type="submit"
@@ -403,7 +359,6 @@ export default function SignupPage() {
                 </Button>
               </motion.div>
 
-              {/* Login link for existing users */}
               <p className="text-center text-sm text-emerald-200">
                 Already have an account?{" "}
                 <Link href="/login" className="text-emerald-400 hover:text-emerald-300 hover:underline">

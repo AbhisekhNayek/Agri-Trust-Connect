@@ -10,30 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sprout, ArrowLeft, Mail, CheckCircle2 } from "lucide-react";
 
-/**
- * ForgotPasswordPage Component
- * 
- * Password recovery page where users can request a password reset link.
- * Features:
- * - Email input for password reset request
- * - Success state showing confirmation message
- * - Loading state during submission
- * - Back to login navigation
- * - Clear error handling
- */
 export default function ForgotPasswordPage() {
-  // Form state management
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
 
-  /**
-   * Handle form submission to request password reset
-   * Simulates sending reset email and shows success message
-   * 
-   * @param e - Form event to prevent default submission
-   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -45,9 +27,20 @@ export default function ForgotPasswordPage() {
         throw new Error("Please enter a valid email address");
       }
 
-      // TODO: Replace with actual API call to send reset email
-      // Simulate network delay for password reset request
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Send request to forgot-password API
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to send reset email");
+      }
 
       // Show success message
       setIsSuccess(true);
@@ -58,10 +51,6 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  /**
-   * Reset form to initial state
-   * Allows user to try again with different email
-   */
   const handleTryAgain = () => {
     setIsSuccess(false);
     setEmail("");
@@ -96,33 +85,26 @@ export default function ForgotPasswordPage() {
         <Card className="border-emerald-800/50 bg-emerald-900/50 backdrop-blur-md shadow-lg">
           {!isSuccess ? (
             <>
-              {/* Header section with logo and title */}
               <CardHeader className="space-y-1">
-                {/* AgriTrust Logo */}
                 <div className="mb-4 flex justify-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-green-600 to-emerald-400 shadow-lg shadow-green-600/20">
                     <Sprout className="h-7 w-7 text-white" />
                   </div>
                 </div>
-
-                {/* Page title and description */}
                 <CardTitle className="text-center text-2xl sm:text-3xl text-white">Forgot Password?</CardTitle>
                 <CardDescription className="text-center text-emerald-200">
                   No worries! Enter your email and we'll send you reset instructions.
                 </CardDescription>
               </CardHeader>
 
-              {/* Password reset form */}
               <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4">
-                  {/* Display error message if request fails */}
                   {error && (
                     <div className="rounded-md bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">
                       {error}
                     </div>
                   )}
 
-                  {/* Email input field */}
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-emerald-200">Email Address</Label>
                     <div className="relative">
@@ -134,7 +116,7 @@ export default function ForgotPasswordPage() {
                         value={email}
                         onChange={(e) => {
                           setEmail(e.target.value);
-                          if (error) setError(""); // Clear error when user types
+                          if (error) setError("");
                         }}
                         disabled={isLoading}
                         required
@@ -149,9 +131,7 @@ export default function ForgotPasswordPage() {
                   </div>
                 </CardContent>
 
-                {/* Form actions */}
                 <CardFooter className="flex flex-col gap-4 mt-2">
-                  {/* Submit button with loading state */}
                   <motion.div variants={buttonGlowVariants} whileHover="hover">
                     <Button
                       type="submit"
@@ -163,7 +143,6 @@ export default function ForgotPasswordPage() {
                     </Button>
                   </motion.div>
 
-                  {/* Back to login link */}
                   <Link
                     href="/login"
                     className="flex items-center justify-center gap-2 text-sm text-emerald-200 hover:text-emerald-300 hover:underline"
@@ -176,16 +155,12 @@ export default function ForgotPasswordPage() {
             </>
           ) : (
             <>
-              {/* Success state - Email sent confirmation */}
               <CardHeader className="space-y-1">
-                {/* Success icon */}
                 <div className="mb-4 flex justify-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
                     <CheckCircle2 className="h-10 w-10 text-emerald-400" />
                   </div>
                 </div>
-
-                {/* Success message */}
                 <CardTitle className="text-center text-2xl sm:text-3xl text-white">Check Your Email</CardTitle>
                 <CardDescription className="text-center text-emerald-200">
                   We've sent password reset instructions to
@@ -194,7 +169,6 @@ export default function ForgotPasswordPage() {
               </CardHeader>
 
               <CardContent className="space-y-4">
-                {/* Information box with instructions */}
                 <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-4 text-sm text-emerald-200">
                   <p className="font-medium text-emerald-400">What's next?</p>
                   <ul className="mt-2 space-y-1 text-xs text-emerald-300">
@@ -205,7 +179,6 @@ export default function ForgotPasswordPage() {
                   </ul>
                 </div>
 
-                {/* Didn't receive email section */}
                 <div className="text-center text-sm text-emerald-200">
                   <p>Didn't receive the email?</p>
                   <button
@@ -217,9 +190,7 @@ export default function ForgotPasswordPage() {
                 </div>
               </CardContent>
 
-              {/* Actions */}
               <CardFooter className="flex flex-col gap-4">
-                {/* Back to login button */}
                 <motion.div variants={buttonGlowVariants} whileHover="hover">
                   <Button
                     asChild
@@ -233,7 +204,6 @@ export default function ForgotPasswordPage() {
                   </Button>
                 </motion.div>
 
-                {/* Resend email option */}
                 <motion.button
                   onClick={handleSubmit}
                   disabled={isLoading}

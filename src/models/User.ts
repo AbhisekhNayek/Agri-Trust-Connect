@@ -1,9 +1,8 @@
-import mongoose, { Document, Model, Schema } from "mongoose"
-import bcrypt from "bcryptjs"
+import mongoose, { Document, Model, Schema } from "mongoose";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
-/**
- * User role types
- */
+// User role types
 export enum UserRole {
   FARMER = "farmer",
   BUYER = "buyer",
@@ -12,36 +11,40 @@ export enum UserRole {
   ADMIN = "admin",
 }
 
-/**
- * User document interface
- */
+// User document interface
 export interface IUser extends Document {
-  fullName: string
-  email: string
-  password: string
-  phone?: string
-  role: UserRole
-  isEmailVerified: boolean
-  emailVerificationToken?: string
-  emailVerificationExpires?: Date
-  passwordResetToken?: string
-  passwordResetExpires?: Date
-  refreshToken?: string
-  lastLogin?: Date
-  isActive: boolean
-  createdAt: Date
-  updatedAt: Date
-  
+  fullName: string;
+  email: string;
+  password: string;
+  phone?: string;
+  role: UserRole;
+  isEmailVerified: boolean;
+  emailVerificationToken?: string;
+  emailVerificationExpires?: Date;
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
+  refreshToken?: string;
+  refreshTokenVersion: number;
+  lastLogin?: Date;
+  lastPasswordChangedAt?: Date;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+
   // Methods
-  comparePassword(candidatePassword: string): Promise<boolean>
-  generatePasswordResetToken(): string
-  generateEmailVerificationToken(): string
+  comparePassword(candidatePassword: string): Promise<boolean>;
+  generatePasswordResetToken(): string;
+  generateEmailVerificationToken(): string;
+  incrementTokenVersion(): void;
 }
 
-/**
- * User schema definition
- */
-const UserSchema = new Schema<IUser>(
+// Interface for custom static methods
+interface IUserModel extends Model<IUser> {
+  findByEmail(email: string): Promise<IUser | null>;
+}
+
+// User schema definition
+const UserSchema = new Schema<IUser, IUserModel>(
   {
     fullName: {
       type: String,
@@ -63,18 +66,24 @@ const UserSchema = new Schema<IUser>(
       type: String,
       required: [true, "Password is required"],
       minlength: [8, "Password must be at least 8 characters"],
-      select: false, // Don't return password by default
+      match: [
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+        "Password must include at least one uppercase letter, one lowercase letter, one number, and one special character",
+      ],
+      select: false,
     },
     phone: {
       type: String,
       trim: true,
-      match: [/^\+?[\d\s-()]+$/, "Please provide a valid phone number"],
+      match: [/^\+?[\d\s-()]{7,15}$/, "Please provide a valid phone number"],
+      sparse: true,
     },
     role: {
       type: String,
       enum: Object.values(UserRole),
       required: [true, "User role is required"],
       default: UserRole.FARMER,
+      immutable: true, // Prevent role changes after creation
     },
     isEmailVerified: {
       type: Boolean,
@@ -100,8 +109,17 @@ const UserSchema = new Schema<IUser>(
       type: String,
       select: false,
     },
+    refreshTokenVersion: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
     lastLogin: {
       type: Date,
+    },
+    lastPasswordChangedAt: {
+      type: Date,
+      select: false,
     },
     isActive: {
       type: Boolean,
@@ -110,92 +128,79 @@ const UserSchema = new Schema<IUser>(
   },
   {
     timestamps: true,
-    toJSON: {
-      transform: function (doc, ret) {
-        delete ret?.password
-        delete ret?.passwordResetToken
-        delete ret?.passwordResetExpires
-        delete ret?.emailVerificationToken
-        delete ret?.emailVerificationExpires
-        delete ret?.refreshToken
-        delete ret.__v
-        return ret
-      },
-    },
   }
-)
+);
 
-/**
- * Index for faster queries
- */
-UserSchema.index({ email: 1, role: 1 })
-UserSchema.index({ isActive: 1 })
+// Indexes for faster queries
+UserSchema.index({ email: 1, role: 1 });
+UserSchema.index({ isActive: 1 });
+UserSchema.index({ passwordResetToken: 1 }, { sparse: true });
+UserSchema.index({ emailVerificationToken: 1 }, { sparse: true });
 
-/**
- * Pre-save middleware to hash password
- */
+// Pre-save middleware to hash password
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
-    return next()
+    return next();
   }
 
   try {
-    const salt = await bcrypt.genSalt(12)
-    this.password = await bcrypt.hash(this.password, salt)
-    next()
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+    this.lastPasswordChangedAt = new Date();
+    this.refreshTokenVersion += 1; // Invalidate existing refresh tokens
+    next();
   } catch (error: any) {
-    next(error)
+    next(error);
   }
-})
+});
 
-/**
- * Method to compare password
- */
+// Method to compare password
 UserSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
   try {
-    return await bcrypt.compare(candidatePassword, this.password)
+    return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
-    return false
+    return false;
   }
-}
+};
 
-/**
- * Method to generate password reset token
- */
+// Method to generate password reset token
 UserSchema.methods.generatePasswordResetToken = function (): string {
-  const resetToken = crypto.randomUUID()
-  
-  this.passwordResetToken = resetToken
-  this.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
-  
-  return resetToken
-}
+  const resetToken = crypto.randomUUID();
+  this.passwordResetToken = resetToken;
+  this.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  return resetToken;
+};
 
-/**
- * Method to generate email verification token
- */
+// Method to generate email verification token
 UserSchema.methods.generateEmailVerificationToken = function (): string {
-  const verificationToken = crypto.randomUUID()
-  
-  this.emailVerificationToken = verificationToken
-  this.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-  
-  return verificationToken
+  const verificationToken = crypto.randomUUID();
+  this.emailVerificationToken = verificationToken;
+  this.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  return verificationToken;
+};
+
+// Method to increment token version
+UserSchema.methods.incrementTokenVersion = function (): void {
+  this.refreshTokenVersion += 1;
+};
+
+// Static method to find by email
+UserSchema.statics.findByEmail = async function (email: string) {
+  return this.findOne({ email: email.toLowerCase() }).select(
+    "+password +refreshToken +emailVerificationToken +emailVerificationExpires +passwordResetToken +passwordResetExpires +refreshTokenVersion +lastPasswordChangedAt"
+  );
+};
+
+// Export User model with explicit type
+let User: IUserModel;
+
+// Check if model is already defined to avoid OverwriteModelError
+if (mongoose.models.User) {
+  User = mongoose.models.User as IUserModel;
+} else {
+  User = mongoose.model<IUser, IUserModel>("User", UserSchema);
 }
 
-/**
- * Static method to find by email
- */
-UserSchema.statics.findByEmail = function (email: string) {
-  return this.findOne({ email: email.toLowerCase() })
-}
-
-/**
- * Export User model
- */
-const User: Model<IUser> =
-  mongoose.models.User || mongoose.model<IUser>("User", UserSchema)
-
-export default User
+export default User;
