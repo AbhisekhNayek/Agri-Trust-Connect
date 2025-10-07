@@ -1,9 +1,10 @@
+// src/components/Footer.tsx
+"use client"
+
 import Link from "next/link"
+import { motion } from "framer-motion"
 import { Sprout, Twitter, Linkedin, Github, Mail } from "lucide-react"
 
-/**
- * Footer navigation links organized by category
- */
 const FOOTER_LINKS = {
   product: [
     { label: "Features", href: "/#features" },
@@ -37,9 +38,6 @@ const FOOTER_LINKS = {
   ],
 }
 
-/**
- * Social media links
- */
 const SOCIAL_LINKS = [
   { icon: Twitter, href: "https://twitter.com/agritrust", label: "Twitter" },
   { icon: Linkedin, href: "https://linkedin.com/company/agritrust", label: "LinkedIn" },
@@ -47,39 +45,40 @@ const SOCIAL_LINKS = [
   { icon: Mail, href: "mailto:hello@agritrust.com", label: "Email" },
 ]
 
-/**
- * Footer Component
- * 
- * Site-wide footer with navigation, social links, and company info.
- * Features:
- * - Multi-column link organization
- * - Social media links
- * - Copyright and legal info
- * - Fully responsive design
- * - Dark theme matching the auth pages
- */
+const buttonGlowVariants = {
+  hover: {
+    boxShadow: "0 0 20px rgba(34, 197, 94, 0.5)",
+    scale: 1.05,
+    transition: { duration: 0.3 },
+  },
+}
+
 export function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="border-t border-green-900/40 bg-black text-gray-400">
+    <footer className="border-t border-emerald-800/50 bg-[linear-gradient(135deg,#1a3c34,#064e3b,#1a3c34)] animate-gradient-bg bg-[length:200%_200%] text-emerald-200">
+      <div
+        className="absolute inset-0 bg-[url('/leaf-texture.png')] bg-[size:200px_200px] opacity-10"
+        aria-hidden="true"
+      />
       {/* Main footer content */}
-      <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
+      <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8 relative backdrop-blur-md">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-7">
           {/* Brand Column - Takes 2 columns on large screens */}
           <div className="col-span-2 space-y-4">
             {/* Logo and brand */}
             <Link href="/" className="inline-flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-green-600 to-green-500 shadow-lg shadow-green-500/30">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-green-600 to-emerald-400 shadow-lg shadow-emerald-400/30">
                 <Sprout className="h-6 w-6 text-white" />
               </div>
-              <span className="bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-lg font-bold text-transparent">
+              <span className="text-lg font-bold text-emerald-400">
                 AgriTrust Connect
               </span>
             </Link>
 
             {/* Company description */}
-            <p className="text-sm leading-relaxed text-gray-400">
+            <p className="text-sm leading-relaxed text-emerald-200">
               Building trust in agriculture through blockchain technology. 
               Connect, track, and verify your agricultural supply chain with transparency.
             </p>
@@ -89,16 +88,18 @@ export function Footer() {
               {SOCIAL_LINKS.map((social) => {
                 const Icon = social.icon
                 return (
-                  <a
+                  <motion.a
                     key={social.label}
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={social.label}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-green-800 bg-black transition-colors hover:bg-green-600 hover:text-white"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-800/50 bg-emerald-900/50 transition-colors hover:bg-emerald-600/20 hover:text-emerald-300"
+                    variants={buttonGlowVariants}
+                    whileHover="hover"
                   >
                     <Icon className="h-4 w-4" />
-                  </a>
+                  </motion.a>
                 )
               })}
             </div>
@@ -112,7 +113,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm transition-colors hover:text-green-400"
+                    className="text-sm transition-colors hover:text-emerald-400"
                   >
                     {link.label}
                   </Link>
@@ -129,7 +130,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm transition-colors hover:text-green-400"
+                    className="text-sm transition-colors hover:text-emerald-400"
                   >
                     {link.label}
                   </Link>
@@ -146,7 +147,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm transition-colors hover:text-green-400"
+                    className="text-sm transition-colors hover:text-emerald-400"
                   >
                     {link.label}
                   </Link>
@@ -163,7 +164,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm transition-colors hover:text-green-400"
+                    className="text-sm transition-colors hover:text-emerald-400"
                   >
                     {link.label}
                   </Link>
@@ -180,7 +181,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm transition-colors hover:text-green-400"
+                    className="text-sm transition-colors hover:text-emerald-400"
                   >
                     {link.label}
                   </Link>
@@ -192,11 +193,11 @@ export function Footer() {
       </div>
 
       {/* Bottom bar with copyright */}
-      <div className="border-t border-green-900/40">
+      <div className="border-t border-emerald-800/50">
         <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             {/* Copyright */}
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-emerald-200">
               © {currentYear} AgriTrust Connect. All rights reserved.
             </p>
 
@@ -204,19 +205,19 @@ export function Footer() {
             <div className="flex gap-6 text-sm">
               <Link
                 href="/privacy"
-                className="transition-colors hover:text-green-400"
+                className="transition-colors hover:text-emerald-400"
               >
                 Privacy
               </Link>
               <Link
                 href="/terms"
-                className="transition-colors hover:text-green-400"
+                className="transition-colors hover:text-emerald-400"
               >
                 Terms
               </Link>
               <Link
                 href="/cookies"
-                className="transition-colors hover:text-green-400"
+                className="transition-colors hover:text-emerald-400"
               >
                 Cookies
               </Link>
