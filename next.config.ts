@@ -1,14 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",        // ✅ required for static export
+  output: 'standalone', // ✅ good for Render or Node hosting
+  reactStrictMode: true,
   images: {
-    unoptimized: true,     // ✅ needed if using next/image
-  },
-  typescript: {
-    ignoreBuildErrors: true, // optional if you want to skip type checks
-  },
-  eslint: {
-    ignoreDuringBuilds: true, // optional to skip linting
+    unoptimized: true, // optional; helps avoid build issues during SSR deploy
   },
 };
 
