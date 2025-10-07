@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import  connectDB  from "@/lib/db/mongoose";
+import connectDB from "@/lib/db/mongoose";
 import User, { UserRole } from "@/models/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -35,7 +35,10 @@ export async function POST(request: NextRequest) {
 
     if (!user.isEmailVerified) {
       return NextResponse.json(
-        { success: false, message: "Please verify your email before logging in" },
+        {
+          success: false,
+          message: "Please verify your email before logging in",
+        },
         { status: 403 }
       );
     }
@@ -46,9 +49,11 @@ export async function POST(request: NextRequest) {
       refreshTokenVersion: user.refreshTokenVersion,
     };
 
-    const accessToken = jwt.sign(payload, process.env.JWT_SECRET!, {
-      expiresIn: process.env.JWT_EXPIRES_IN || "1h",
-    });
+    const accessToken = jwt.sign(
+      payload,
+      process.env.JWT_SECRET as jwt.Secret,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "1h" }
+    );
 
     const refreshToken = jwt.sign(payload, process.env.JWT_SECRET!, {
       expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
