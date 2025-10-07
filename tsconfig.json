@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "//": "Temporarily disabled strict TypeScript checks for development",
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
